@@ -1,0 +1,15 @@
+[package]
+name = "pwn-hook"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+redhook = "2.0"
+lazy_static = "1.4"
+#cxx = "1.0"
+
+[lib]
+name = "game_hooks"
+crate_type = ["dylib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
