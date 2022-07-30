@@ -129,6 +129,16 @@ impl Actor {
         }
         unsafe { FUNC(self) }
     }
+    pub fn get_velocity(&self) -> Vector3 {
+        lazy_static! {
+            static ref FUNC: unsafe extern "C" fn(*const Actor) -> Vector3 = unsafe {
+                std::mem::transmute(dlsym_current(
+                    "_ZN5Actor11GetVelocityEv\x00",
+                ))
+            };
+        }
+        unsafe { FUNC(self) }
+    }
     pub fn get_rotation(&self) -> Rotation {
         lazy_static! {
             static ref FUNC: unsafe extern "C" fn(*const Actor) -> Rotation = unsafe {
@@ -138,6 +148,26 @@ impl Actor {
             };
         }
         unsafe { FUNC(self) }
+    }
+    pub fn set_position(&self, pos: &Vector3) {
+        lazy_static! {
+            static ref FUNC: unsafe extern "C" fn(*const Actor, *const Vector3) = unsafe {
+                std::mem::transmute(dlsym_current(
+                    "_ZN5Actor11SetPositionERK7Vector3\x00",
+                ))
+            };
+        }
+        unsafe { FUNC(self, pos) }
+    }
+    pub fn set_velocity(&self, pos: &Vector3) {
+        lazy_static! {
+            static ref FUNC: unsafe extern "C" fn(*const Actor, *const Vector3) = unsafe {
+                std::mem::transmute(dlsym_current(
+                    "_ZN5Actor11SetVelocityERK7Vector3\x00",
+                ))
+            };
+        }
+        unsafe { FUNC(self, pos) }
     }
 }
 
@@ -216,4 +246,27 @@ pub struct Player {
     pub m_lastHitByItem: *mut u8,
     pub m_lastHitItemTimeLeft: f32,
     pub m_circuitStateCooldownTimer: f32,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct GameServerConnection {
+    pub super_ServerConnection: [u8; 256],
+    pub m_sock: *const c_void,
+    pub m_writeStream: [u8; 32],
+    pub m_tickInProgress: bool,
+    pub _align1: [u8; 7],
+}
+
+impl GameServerConnection {
+    pub fn jump(&self, state: bool) {
+        lazy_static! {
+            static ref FUNC: unsafe extern "C" fn(*const GameServerConnection, bool) = unsafe {
+                std::mem::transmute(dlsym_current(
+                    "_ZN20GameServerConnection4JumpEb\x00",
+                ))
+            };
+        }
+        unsafe { FUNC(self, state) }
+    }
 }

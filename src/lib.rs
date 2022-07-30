@@ -84,6 +84,13 @@ redhook::hook! {
         true
     }
 }
+redhook::hook! {
+    //make the last egg visible, but not usable
+    unsafe fn _ZN14BallmerPeakEgg6CanUseEP7IPlayer(x: *const c_void,y: *const c_void) -> bool => last_egg {
+       redhook::real!(_ZN14BallmerPeakEgg6CanUseEP7IPlayer)(x, y);
+       true
+    }
+}
 
 redhook::hook! {
     unsafe fn _ZN11RubicksCube12CanStealItemEP6PlayerP5IItem(
@@ -96,6 +103,28 @@ redhook::hook! {
 }
 
 static mut PRINT_POS: AtomicBool = AtomicBool::new(false);
+static mut PRINT_VEL: AtomicBool = AtomicBool::new(false);
+static mut FLOAT: AtomicBool = AtomicBool::new(false);
+static mut FLOAT_HELPER: AtomicBool = AtomicBool::new(false);
+
+//the server think we are falling if didn't sent a jump recently.
+//so, if float is enabled, send a jump true with the position packet.
+redhook::hook! {
+    unsafe fn _ZN20GameServerConnection16MoveAndGetEventsEP6Player(
+        game_server: *const GameServerConnection,
+        player: *const Player
+    ) => client_send_position {
+        if FLOAT.load(Ordering::Relaxed) {
+            let state = FLOAT_HELPER.get_mut();
+            *state = !*state;
+            (*game_server).jump(*state);
+        }
+        redhook::real!(_ZN20GameServerConnection16MoveAndGetEventsEP6Player)(
+            game_server,
+            player,
+        )
+    }
+}
 
 redhook::hook! {
     unsafe fn _ZN6Player4TickEf(player: *const Player, delta_time: f32) => player_tick {
@@ -105,6 +134,17 @@ redhook::hook! {
                  (*player).super_Actor.get_position(),
                  (*player).super_Actor.get_rotation(),
              );
+        }
+        if PRINT_VEL.load(Ordering::Relaxed) {
+            println!(
+                "Velocity {}",
+                 (*player).super_Actor.get_velocity(),
+             );
+        }
+        if FLOAT.load(Ordering::Relaxed) {
+            let mut velocity = (*player).super_Actor.get_velocity();
+            velocity.z = 3.0;
+            (*player).super_Actor.set_velocity(&velocity);
         }
         redhook::real!(_ZN6Player4TickEf)(player, delta_time)
     }
@@ -124,6 +164,20 @@ redhook::hook! {
                 Some("position") => {
                     let pos = PRINT_POS.get_mut();
                     *pos = !*pos;
+                },
+                Some("velocity") => {
+                    let pos = PRINT_VEL.get_mut();
+                    *pos = !*pos;
+                },
+                Some("tp") => {
+                    let x: f32 = command.next().unwrap().parse().unwrap();
+                    let y: f32 = command.next().unwrap().parse().unwrap();
+                    let z: f32 = command.next().unwrap().parse().unwrap();
+                    (*player).super_Actor.set_position(&Vector3{x, y, z});
+                },
+                Some("float") => {
+                    let float = FLOAT.get_mut();
+                    *float = !*float;
                 },
                 Some("ft") => {
                     let from = command.next().unwrap().to_owned() + "\x00";
